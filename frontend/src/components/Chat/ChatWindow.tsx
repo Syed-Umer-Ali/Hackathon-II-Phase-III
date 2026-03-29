@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -111,16 +112,53 @@ const styles = `
   .badge { font-size:10px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; text-transform:uppercase; font-weight:bold; }
   .badge.completed { background:var(--accent-dim); color:var(--accent); }
   .badge.pending { background:rgba(245,158,11,0.1); color:#f59e0b; }
+
+  /* AUTH UI */
+  .auth-container { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; width: 100%; position:relative; z-index:1; }
+  .auth-card { background:rgba(2,6,10,0.6); border:1px solid var(--border); border-radius:24px; padding:40px; width:100%; max-width:400px; backdrop-filter:blur(30px); animation:fadeUp 0.5s ease; box-shadow:0 0 50px rgba(0,255,150,0.05); }
+  .auth-title { font-family:var(--font-display); font-size:28px; font-weight:800; margin-bottom:10px; text-align:center; }
+  .auth-subtitle { font-family:var(--font-mono); font-size:10px; color:var(--muted); text-align:center; margin-bottom:30px; letter-spacing:0.15em; }
+  .auth-input-group { margin-bottom:20px; }
+  .auth-input { width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:12px 16px; font-family:var(--font-mono); font-size:14px; color:var(--text); outline:none; transition:all 0.2s; }
+  .auth-input:focus { border-color:var(--accent); background:rgba(255,255,255,0.07); }
+  .auth-btn { width:100%; background:var(--accent); color:#000; border:none; border-radius:12px; padding:14px; font-family:var(--font-mono); font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s; margin-top:10px; }
+  .auth-btn:hover { transform:translateY(-2px); box-shadow:0 0 20px rgba(0,255,150,0.3); }
+  .auth-toggle { font-family:var(--font-mono); font-size:12px; color:var(--muted); text-align:center; margin-top:20px; cursor:pointer; }
+  .auth-toggle span { color:var(--accent); text-decoration:underline; }
+  .auth-error { color:#ef4444; font-family:var(--font-mono); font-size:12px; margin-top:10px; text-align:center; }
 `
 
-export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }) {
+export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [convId, setConvId] = useState<string | null>(null)
+  
+  // Auth state
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoginView, setIsLoginView] = useState(true)
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [activeUser, setActiveUser] = useState<string>('')
+  const [showProfile, setShowProfile] = useState(false)
+
+  const router = useRouter()
   const bottomRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('todo_token')
+    if (savedToken) {
+      setToken(savedToken)
+      try {
+        const payload = JSON.parse(atob(savedToken.split('.')[1]))
+        if (payload.sub) setActiveUser(payload.sub)
+      } catch (e) {}
+    }
+  }, [])
 
   const suggestions = [
     '🛒 Add task: Buy groceries',
@@ -130,11 +168,16 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
   ]
 
   const fetchTasks = async () => {
+    if (!token) return
     try {
-      const res = await fetch(`http://localhost:8000/api/${userId}/tasks`)
+      const res = await fetch(`http://localhost:8000/api/tasks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       if (res.ok) {
         const data = await res.json()
         setTasks(data)
+      } else if (res.status === 401) {
+        handleLogout()
       }
     } catch (err) {
       console.error('Failed to fetch tasks:', err)
@@ -142,10 +185,12 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
   }
 
   useEffect(() => {
-    fetchTasks()
-    const interval = setInterval(fetchTasks, 10000)
-    return () => clearInterval(interval)
-  }, [userId])
+    if (token) {
+      fetchTasks()
+      const interval = setInterval(fetchTasks, 10000)
+      return () => clearInterval(interval)
+    }
+  }, [token])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
 
@@ -164,8 +209,12 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
     if (taRef.current) taRef.current.style.height = '52px'
 
     try {
-      const res = await fetch(`http://localhost:8000/api/${userId}/chat`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`http://localhost:8000/api/chat`, {
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({ conversation_id: convId, message: msg }),
       })
       const data = await res.json()
@@ -182,7 +231,10 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
 
   const completeTask = async (id: number) => {
     try {
-      await fetch(`http://localhost:8000/api/${userId}/tasks/${id}/complete`, { method: 'POST' })
+      await fetch(`http://localhost:8000/api/tasks/${id}/complete`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       fetchTasks()
     } catch (err) { console.error(err) }
   }
@@ -190,9 +242,68 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
   const deleteTask = async (id: number) => {
     if (!confirm('Delete this task?')) return
     try {
-      await fetch(`http://localhost:8000/api/${userId}/tasks/${id}`, { method: 'DELETE' })
+      await fetch(`http://localhost:8000/api/tasks/${id}`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       fetchTasks()
     } catch (err) { console.error(err) }
+  }
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthError('')
+    
+    try {
+      let res;
+      if (isLoginView) {
+        // Login uses OAuth2PasswordRequestForm (form-urlencoded)
+        const formData = new URLSearchParams()
+        formData.append('username', username)
+        formData.append('password', password)
+        res = await fetch(`http://localhost:8000/api/auth/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData
+        })
+      } else {
+        // Register uses our new UserRegister schema (JSON)
+        res = await fetch(`http://localhost:8000/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        })
+      }
+
+      const data = await res.json()
+      if (res.ok) {
+        setToken(data.access_token)
+        localStorage.setItem('todo_token', data.access_token)
+        try {
+          const payload = JSON.parse(atob(data.access_token.split('.')[1]))
+          if (payload.sub) setActiveUser(payload.sub)
+        } catch (e) {}
+        // Reset fields
+        setUsername('')
+        setEmail('')
+        setPassword('')
+      } else {
+        setAuthError(data.detail || 'Authentication failed')
+      }
+    } catch (err) {
+      setAuthError('Network error')
+    }
+  }
+
+  const handleLogout = () => {
+    setToken(null)
+    localStorage.removeItem('todo_token')
+    setActiveUser('')
+    setTasks([])
+    setMessages([])
+    setConvId(null)
+    setShowProfile(false)
+    router.push('/')
   }
 
   return (
@@ -202,6 +313,64 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
         <div className="orb" style={{ width: 600, height: 600, background: 'var(--accent)', top: '-20%', right: '5%' }} />
         <div className="orb" style={{ width: 500, height: 500, background: 'var(--accent3)', bottom: '-10%', left: '-5%', opacity: 0.3 }} />
 
+        {!token ? (
+          <div className="auth-container">
+            <div className="auth-card">
+              <div className="auth-title">todo.ai</div>
+              <div className="auth-subtitle">SECURE AGENTIC WORKSPACE</div>
+              <form onSubmit={handleAuth}>
+                <div className="auth-input-group">
+                  <input className="auth-input" type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+                </div>
+                {!isLoginView && (
+                  <div className="auth-input-group">
+                    <input className="auth-input" type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} required />
+                  </div>
+                )}
+                <div className="auth-input-group">
+                  <input className="auth-input" type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+                </div>
+                {authError && <div className="auth-error">{authError}</div>}
+                <button className="auth-btn" type="submit">
+                  {isLoginView ? 'INITIALIZE LINK' : 'CREATE PROTOCOL'}
+                </button>
+              </form>
+              <div className="auth-toggle" onClick={() => setIsLoginView(!isLoginView)}>
+                {isLoginView ? "Don't have an account? " : "Already have an account? "}
+                <span>{isLoginView ? 'Sign Up' : 'Log In'}</span>
+              </div>
+            </div>
+          </div>
+        ) : showProfile ? (
+          <div className="auth-container">
+            <div className="auth-card" style={{ textAlign: 'center' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 800, margin: '0 auto 20px' }}>
+                {activeUser ? activeUser[0].toUpperCase() : 'U'}
+              </div>
+              <div className="auth-title">{activeUser}</div>
+              <div className="auth-subtitle">AGENTIC PROTOCOL USER</div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-around', margin: '30px 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '15px 0' }}>
+                 <div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--accent)' }}>{tasks.length}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>TOTAL TASKS</div>
+                 </div>
+                 <div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--accent3)' }}>{tasks.filter(t => t.completed).length}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>COMPLETED</div>
+                 </div>
+              </div>
+
+              <button className="auth-btn" onClick={() => setShowProfile(false)}>
+                RETURN TO WORKSPACE
+              </button>
+              <button onClick={handleLogout} style={{ width: '100%', background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '12px', padding: '14px', fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, cursor: 'pointer', marginTop: '10px', transition: 'all 0.2s' }}>
+                LOGOUT SYSTEM
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* SIDEBAR: TASKS */}
         <aside className="sidebar">
           <div className="sidebar-header">
@@ -249,7 +418,15 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
               <h2 style={{ fontSize: '18px', fontWeight: 800 }}>todo.ai assistant</h2>
               <p style={{ fontSize: '10px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>PHASE III · AGENTIC WORKFLOW</p>
             </div>
-            <div className="status-dot">SYSTEM ACTIVE</div>
+            <div className="status-dot">
+              SYSTEM ACTIVE
+              <div onClick={() => setShowProfile(true)} style={{ cursor: 'pointer', marginLeft: 20, display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '5px 12px', borderRadius: 20, border: '1px solid var(--border)', gap: 10, transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background='var(--surface-hover)'} onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800 }}>
+                  {activeUser ? activeUser[0].toUpperCase() : 'U'}
+                </div>
+                <span style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>{activeUser}</span>
+              </div>
+            </div>
           </header>
 
           <div className="messages-area">
@@ -296,6 +473,8 @@ export default function ChatWindow({ userId = 'demo-user' }: { userId?: string }
             </div>
           </div>
         </main>
+        </>
+        )}
       </div>
     </>
   )

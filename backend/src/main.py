@@ -9,7 +9,9 @@ load_dotenv()
 
 from src.api.chat import router as chat_router
 from src.api.tasks import router as tasks_router
+from src.api.auth import router as auth_router
 from src.models.chat import Task, Conversation, Message # Import to register with SQLModel
+from src.models.user import User
 
 app = FastAPI(title="Evolution of Todo - Phase III")
 
@@ -34,6 +36,7 @@ def on_startup():
 # 4. Include Routers
 app.include_router(chat_router)
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
+app.include_router(auth_router, prefix="/api", tags=["auth"])
 
 @app.get("/")
 def read_root():

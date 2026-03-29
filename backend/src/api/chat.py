@@ -4,6 +4,8 @@ from typing import Optional, List
 import uuid
 from sqlmodel import Session, select, create_engine
 from src.models.chat import Conversation, Message
+from src.models.user import User
+from src.core.security import get_current_user
 from src.services.agent import TodoAgent
 import os
 from dotenv import load_dotenv
@@ -23,8 +25,9 @@ class ChatResponse(BaseModel):
     conversation_id: uuid.UUID
     response: str
 
-@router.post("/api/{user_id}/chat", response_model=ChatResponse)
-async def chat_endpoint(user_id: str, request: ChatRequest):
+@router.post("/api/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest, current_user: User = Depends(get_current_user)):
+    user_id = current_user.username
     with Session(engine) as session:
         # 1. Handle Conversation
         if not request.conversation_id:

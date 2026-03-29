@@ -65,6 +65,7 @@ class TodoAgent:
 
             self.agent = Agent(
                 name="TodoAssistant",
+                model="gpt-4o-mini",
                 instructions="""
                 You are a helpful Todo assistant. You can add, list, update, delete, and complete tasks.
                 Always confirm actions with a friendly response.

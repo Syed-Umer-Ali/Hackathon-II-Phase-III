@@ -51,8 +51,6 @@ const phases = [
   { id: 1, name: "Console App", tech: "Python", points: 100, status: "done", desc: "In-memory CLI todo app" },
   { id: 2, name: "Full-Stack Web", tech: "Next.js + FastAPI", points: 150, status: "done", desc: "REST API + Neon DB + Auth" },
   { id: 3, name: "AI Chatbot", tech: "Agents SDK + MCP", points: 200, status: "active", desc: "Natural language todo mgmt" },
-  { id: 4, name: "Kubernetes", tech: "Minikube + Helm", points: 250, status: "upcoming", desc: "Local K8s deployment" },
-  { id: 5, name: "Cloud Deploy", tech: "DigitalOcean DOKS", points: 300, status: "upcoming", desc: "Kafka + Dapr distributed" },
 ];
 
 const mcpTools = [
@@ -112,7 +110,13 @@ export default function App() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>todo.ai</span>
           </div>
           <div style={{ display: "flex", gap: 28 }}>
-            {["Phases", "Architecture", "Tech Stack", "MCP Tools"].map(n => <a key={n}>{n}</a>)}
+            {[
+              { name: "Phases", href: "#phases" },
+              { name: "Architecture", href: "#architecture" },
+              { name: "Tech Stack", href: "#tech-stack" },
+              { name: "MCP Tools", href: "#mcp-tools" },
+              { name: "How It Works", href: "#how-it-works" }
+            ].map(n => <a key={n.name} href={n.href}>{n.name}</a>)}
           </div>
           <div className="tag" style={{ background: "rgba(0,255,150,0.1)", border: "1px solid rgba(0,255,150,0.25)", color: "var(--accent)" }}>⚡ PHASE III ACTIVE</div>
         </nav>
@@ -140,7 +144,7 @@ export default function App() {
             </div>
 
             <div className="au d3" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link href="/chat"><button className="btn-p">View Live Demo →</button></Link>
+              <Link href="/chat"><button className="btn-p">Start Chat →</button></Link>
               <button className="btn-g">GitHub Repo</button>
             </div>
 
@@ -156,7 +160,7 @@ export default function App() {
         </section>
 
         {/* PHASES */}
-        <section style={{ padding: "80px 40px", maxWidth: 1200, margin: "0 auto" }}>
+        <section id="phases" style={{ padding: "80px 40px", maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 44, display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--accent)", letterSpacing: ".15em", marginBottom: 8 }}>// HACKATHON PHASES</div>
@@ -192,7 +196,7 @@ export default function App() {
         </section>
 
         {/* MCP TOOLS */}
-        <section style={{ padding: "60px 40px", maxWidth: 1200, margin: "0 auto" }}>
+        <section id="mcp-tools" style={{ padding: "60px 40px", maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 40 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--accent)", letterSpacing: ".15em", marginBottom: 8 }}>// MCP SERVER</div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px,4vw,42px)", fontWeight: 800 }}>AI Tool Layer</h2>
@@ -215,7 +219,7 @@ export default function App() {
         </section>
 
         {/* ARCHITECTURE */}
-        <section style={{ padding: "60px 40px", maxWidth: 1200, margin: "0 auto" }}>
+        <section id="architecture" style={{ padding: "60px 40px", maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 36 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--accent)", letterSpacing: ".15em", marginBottom: 8 }}>// SYSTEM DESIGN</div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px,4vw,42px)", fontWeight: 800 }}>Architecture</h2>
@@ -237,7 +241,7 @@ export default function App() {
         </section>
 
         {/* TECH STACK */}
-        <section style={{ padding: "60px 40px", maxWidth: 1200, margin: "0 auto" }}>
+        <section id="tech-stack" style={{ padding: "60px 40px", maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 36 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--accent)", letterSpacing: ".15em", marginBottom: 8 }}>// BUILT WITH</div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px,4vw,42px)", fontWeight: 800 }}>Tech Stack</h2>
@@ -246,6 +250,28 @@ export default function App() {
             {techStack.map(t => (
               <div key={t.name} className="glass tech-pill" style={{ border: "1px solid rgba(255,255,255,0.07)", color: "var(--text)" }}>
                 <span>{t.icon}</span><span>{t.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* HOW IT WORKS */}
+        <section id="how-it-works" style={{ padding: "60px 40px 100px", maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--accent)", letterSpacing: ".15em", marginBottom: 8 }}>// WORKFLOW EXPLAINED</div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px,4vw,42px)", fontWeight: 800 }}>How It Works?</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+            {[
+              { step: "01", title: "Natural Language Input", desc: "User types a command like 'Add a task to buy groceries tomorrow' using everyday language." },
+              { step: "02", title: "Agentic Reasoning", desc: "The AI agent parses the text, determining the required action and identifying key parameters via OpenAI models." },
+              { step: "03", title: "Secure Context", desc: "The backend FastMCP server receives the action context, automatically tagging it with your unique JWT User ID." },
+              { step: "04", title: "Database Execution", desc: "Neon PostgreSQL runs the specific CRUD command strictly under your isolated schema. Everything stays private." }
+            ].map((s) => (
+              <div key={s.step} className="glass" style={{ padding: "30px", borderRadius: "16px", position: "relative" }}>
+                <div style={{ position: "absolute", top: -14, left: 20, background: "var(--bg)", border: "1px solid var(--border)", padding: "4px 10px", borderRadius: 8, fontFamily: "var(--font-mono)", fontWeight: "bold", color: "var(--accent)", fontSize: 12 }}>Step {s.step}</div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, margin: "10px 0" }}>{s.title}</h3>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>{s.desc}</p>
               </div>
             ))}
           </div>
