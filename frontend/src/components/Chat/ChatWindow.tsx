@@ -145,6 +145,8 @@ export default function ChatWindow() {
   const [activeUser, setActiveUser] = useState<string>('')
   const [showProfile, setShowProfile] = useState(false)
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
+
   const router = useRouter()
   const bottomRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -170,7 +172,7 @@ export default function ChatWindow() {
   const fetchTasks = async () => {
     if (!token) return
     try {
-      const res = await fetch(`http://localhost:8000/api/tasks`, {
+      const res = await fetch(`${API_URL}/api/tasks`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
@@ -209,7 +211,7 @@ export default function ChatWindow() {
     if (taRef.current) taRef.current.style.height = '52px'
 
     try {
-      const res = await fetch(`http://localhost:8000/api/chat`, {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: 'POST', 
         headers: { 
           'Content-Type': 'application/json',
@@ -231,7 +233,7 @@ export default function ChatWindow() {
 
   const completeTask = async (id: number) => {
     try {
-      await fetch(`http://localhost:8000/api/tasks/${id}/complete`, { 
+      await fetch(`${API_URL}/api/tasks/${id}/complete`, { 
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -242,7 +244,7 @@ export default function ChatWindow() {
   const deleteTask = async (id: number) => {
     if (!confirm('Delete this task?')) return
     try {
-      await fetch(`http://localhost:8000/api/tasks/${id}`, { 
+      await fetch(`${API_URL}/api/tasks/${id}`, { 
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -261,14 +263,14 @@ export default function ChatWindow() {
         const formData = new URLSearchParams()
         formData.append('username', username)
         formData.append('password', password)
-        res = await fetch(`http://localhost:8000/api/auth/token`, {
+        res = await fetch(`${API_URL}/api/auth/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: formData
         })
       } else {
         // Register uses our new UserRegister schema (JSON)
-        res = await fetch(`http://localhost:8000/api/auth/register`, {
+        res = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password })
